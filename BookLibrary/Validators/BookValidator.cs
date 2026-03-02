@@ -1,9 +1,9 @@
-﻿using FluentValidation;
-using BookLibrary.Models;
+using FluentValidation;
+using BookLibrary.Dto.Requests;
 
 namespace BookLibrary.Validators;
 
-public class BookValidator : AbstractValidator<Book>
+public class BookValidator : AbstractValidator<BookRequest>
 {
     public BookValidator()
     {

@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 namespace BookLibrary.Middleware;
 
 public class GlobalExceptionHandlerMiddleware(
@@ -14,9 +14,6 @@ public class GlobalExceptionHandlerMiddleware(
         try
         {
             await next(context);
-
-            _logger.LogInformation("Access operation for {Method} {Path}.",
-                context.Request.Method, context.Request.Path);
         }
         catch (Exception ex)
         {

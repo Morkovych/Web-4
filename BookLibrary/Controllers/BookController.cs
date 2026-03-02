@@ -1,13 +1,13 @@
-﻿using BookLibrary.Contracts;
+using BookLibrary.Contracts;
 using BookLibrary.Dto;
+using BookLibrary.Dto.Requests;
 using BookLibrary.Dto.Responses;
-using BookLibrary.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookLibrary.Controllers;
 
 [ApiController]
-[Route("books")]
+[Route("api/books")]
 public class BookController(
     IBookService bookService,
     ILogger<BookController> logger
@@ -61,14 +61,14 @@ public class BookController(
     }
 
     [HttpPost]
-    public async Task<ActionResult<ApiResponse<BookResponse>>> CreateBook(Book book)
+    public async Task<ActionResult<ApiResponse<BookResponse>>> CreateBook(BookRequest request)
     {
         logger.LogInformation("Attempting to create a new book. Title: {Title}, Author: {Author}",
-            book.Title, book.Author);
+            request.Title, request.Author);
 
         try
         {
-            var newBook = await bookService.CreateAsync(book);
+            var newBook = await bookService.CreateAsync(request.ToBook());
             logger.LogInformation("Book created successfully with ID {BookId}.", newBook.Id);
 
             return CreatedAtAction(
@@ -83,17 +83,17 @@ public class BookController(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error occurred while creating book. Title: {Title}", book.Title);
+            logger.LogError(ex, "Error occurred while creating book. Title: {Title}", request.Title);
             throw;
         }
     }
 
     [HttpPut("{id:int}")]
-    public async Task<ActionResult<ApiResponse<BookResponse>>> UpdateBook(int id, Book book)
+    public async Task<ActionResult<ApiResponse<BookResponse>>> UpdateBook(int id, BookRequest request)
     {
-        logger.LogInformation("Attempting to update book with ID {BookId}. New title: {Title}", id, book.Title);
+        logger.LogInformation("Attempting to update book with ID {BookId}. New title: {Title}", id, request.Title);
 
-        book.Id = id;
+        var book = request.ToBook(id);
         bool success = await bookService.UpdateAsync(book);
         if (!success)
         {

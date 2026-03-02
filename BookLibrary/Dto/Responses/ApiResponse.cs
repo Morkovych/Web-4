@@ -1,4 +1,4 @@
-﻿namespace BookLibrary.Dto.Responses;
+namespace BookLibrary.Dto.Responses;
 
 public class ApiResponse<T>
 {
@@ -7,9 +7,11 @@ public class ApiResponse<T>
     public string Message { get; set; } = "Operation completed successfully.";
 }
 
-public class ApiResponse
+public class ApiResponse : ApiResponse<object?>
 {
-    public bool Success { get; set; } = false;
-    public object? Data { get; set; }
-    public string Message { get; set; } = "An error occurred.";
+    public ApiResponse()
+    {
+        Success = false;
+        Message = "An error occurred.";
+    }
 }

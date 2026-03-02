@@ -19,7 +19,8 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 });
 
 builder.Services.AddScoped<IBookService, BookService>();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddControllersAsServices();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddValidatorsFromAssemblyContaining<BookValidator>();
