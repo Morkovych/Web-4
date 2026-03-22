@@ -1,5 +1,6 @@
 using BookLibrary.Models;
 using BookLibrary.Services;
+using FluentAssertions;
 
 namespace BookLibrary.Tests;
 
@@ -12,27 +13,31 @@ public class BookServiceTests
     {
         var result = await _service.GetAllAsync();
 
-        Assert.NotEmpty(result);
-    }
-
-    [Fact]
-    public async Task GetAllAsync_FilterByAuthor_ReturnsOnlyMatchingBooks()
-    {
-        var result = await _service.GetAllAsync(author: "Martin");
-
-        Assert.NotEmpty(result);
-        Assert.All(result, b =>
-            Assert.Contains("Martin", b.Author, StringComparison.OrdinalIgnoreCase));
+        // Assert.NotEmpty(result);
+        result.Should().NotBeEmpty();
     }
 
     [Fact]
     public async Task GetAllAsync_FilterByAuthorPartialMatch_ReturnsMatchingBooks()
     {
-        var result = await _service.GetAllAsync(author: "rob");
+        var book = new Book
+        {
+            Title = "Test Book",
+            Author = "Test Author",
+            PublicationYear = 2020,
+            IsAvailable = true
+        };
 
-        Assert.NotEmpty(result);
-        Assert.All(result, b =>
-            Assert.Contains("rob", b.Author, StringComparison.OrdinalIgnoreCase));
+        await _service.CreateAsync(book);
+
+        var result = await _service.GetAllAsync(author: "auth");
+
+        // Assert.NotEmpty(result);
+        result.Should().NotBeEmpty();
+        // Assert.All(result, b =>
+        //     Assert.Contains("auth", b.Author, StringComparison.OrdinalIgnoreCase));
+        result.Should().AllSatisfy(b =>
+            b.Author.ToLowerInvariant().Should().Contain("auth"));
     }
 
     [Fact]
@@ -40,7 +45,8 @@ public class BookServiceTests
     {
         var result = await _service.GetAllAsync(author: "Tolkien_xyz_not_exist");
 
-        Assert.Empty(result);
+        // Assert.Empty(result);
+        result.Should().BeEmpty();
     }
 
     [Fact]
@@ -50,7 +56,9 @@ public class BookServiceTests
 
         var titles = result.Select(b => b.Title).ToList();
         var sortedTitles = titles.OrderBy(t => t).ToList();
-        Assert.Equal(sortedTitles, titles);
+
+        // Assert.Equal(sortedTitles, titles);
+        titles.Should().Equal(sortedTitles);
     }
 
     [Fact]
@@ -58,7 +66,8 @@ public class BookServiceTests
     {
         var result = await _service.GetAllAsync(sortBy: "unknown");
 
-        Assert.NotEmpty(result);
+        // Assert.NotEmpty(result);
+        result.Should().NotBeEmpty();
     }
 
     [Fact]
@@ -66,8 +75,10 @@ public class BookServiceTests
     {
         var result = await _service.GetByIdAsync(1);
 
-        Assert.NotNull(result);
-        Assert.Equal(1, result.Id);
+        // Assert.NotNull(result);
+        result.Should().NotBeNull();
+        // Assert.Equal(1, result.Id);
+        result.Id.Should().Be(1);
     }
 
     [Fact]
@@ -75,7 +86,8 @@ public class BookServiceTests
     {
         var result = await _service.GetByIdAsync(999);
 
-        Assert.Null(result);
+        // Assert.Null(result);
+        result.Should().BeNull();
     }
 
     [Fact]
@@ -91,9 +103,12 @@ public class BookServiceTests
 
         var result = await _service.CreateAsync(book);
 
-        Assert.NotNull(result);
-        Assert.True(result.Id > 0);
-        Assert.Equal("Test Book", result.Title);
+        // Assert.NotNull(result);
+        result.Should().NotBeNull();
+        // Assert.True(result.Id > 0);
+        result.Id.Should().BeGreaterThan(0);
+        // Assert.Equal("Test Book", result.Title);
+        result.Title.Should().Be("Test Book");
     }
 
     [Fact]
@@ -105,7 +120,8 @@ public class BookServiceTests
         var result1 = await _service.CreateAsync(book1);
         var result2 = await _service.CreateAsync(book2);
 
-        Assert.NotEqual(result1.Id, result2.Id);
+        // Assert.NotEqual(result1.Id, result2.Id);
+        result1.Id.Should().NotBe(result2.Id);
     }
 
     [Fact]
@@ -127,9 +143,11 @@ public class BookServiceTests
             PublicationYear = created.PublicationYear,
             IsAvailable = created.IsAvailable
         };
-        var result = await _service.UpdateAsync(updated);
 
-        Assert.True(result);
+        bool result = await _service.UpdateAsync(updated);
+
+        // Assert.True(result);
+        result.Should().BeTrue();
     }
 
     [Fact]
@@ -144,12 +162,11 @@ public class BookServiceTests
             IsAvailable = false
         };
 
-        var result = await _service.UpdateAsync(book);
+        bool result = await _service.UpdateAsync(book);
 
-        Assert.False(result);
+        // Assert.False(result);
+        result.Should().BeFalse();
     }
-
-    // ---------- DeleteAsync ----------
 
     [Fact]
     public async Task DeleteAsync_ExistingBook_ReturnsTrue()
@@ -162,17 +179,19 @@ public class BookServiceTests
             IsAvailable = true
         });
 
-        var result = await _service.DeleteAsync(created.Id);
+        bool result = await _service.DeleteAsync(created.Id);
 
-        Assert.True(result);
+        // Assert.True(result);
+        result.Should().BeTrue();
     }
 
     [Fact]
     public async Task DeleteAsync_NonExistingId_ReturnsFalse()
     {
-        var result = await _service.DeleteAsync(99999);
+        bool result = await _service.DeleteAsync(99999);
 
-        Assert.False(result);
+        // Assert.False(result);
+        result.Should().BeFalse();
     }
 
     [Fact]
@@ -189,6 +208,7 @@ public class BookServiceTests
         await _service.DeleteAsync(created.Id);
         var found = await _service.GetByIdAsync(created.Id);
 
-        Assert.Null(found);
+        // Assert.Null(found);
+        found.Should().BeNull();
     }
 }

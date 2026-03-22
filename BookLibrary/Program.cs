@@ -42,3 +42,7 @@ app.MapControllers();
 app.UseMiddleware<NotFoundHandlerMiddleware>();
 
 app.Run();
+
+public abstract partial class Program
+{
+}
