@@ -1,13 +1,14 @@
 using BookLibrary.Models;
 using BookLibrary.Repositories;
 using BookLibrary.Services;
+using BookLibrary.Validators;
 using FluentAssertions;
 
 namespace BookLibrary.Tests;
 
 public class BookServiceTests
 {
-    private readonly BookService _service = new(new MemoryBookRepository());
+    private readonly BookService _service = new(new MemoryBookRepository(), new BookValidator());
 
     [Fact]
     public async Task GetAllAsync_NoFilters_ReturnsAllBooks()

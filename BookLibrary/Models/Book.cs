@@ -1,5 +1,6 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using BookLibrary.Validators;
 
 namespace BookLibrary.Models;
 
@@ -19,8 +20,7 @@ public class Book
     [Description("Автор книги. Обязательное поле.")]
     public string Author { get; init; } = null!;
 
-    [RegularExpression(@"^(978|979)-\d{2}-\d{4}-\d{3}-\d$",
-        ErrorMessage = "ISBN must follow the ISBN-13 XXX-XX-XXXX-XXX-X format (start with 978 or 979).")]
+    [Isbn]
     [Description("ISBN-13 книги (международный стандартный номер).")]
     public string? Isbn { get; init; }
 

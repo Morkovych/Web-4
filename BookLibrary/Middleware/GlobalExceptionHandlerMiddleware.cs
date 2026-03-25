@@ -1,4 +1,6 @@
 using System.Text.Json;
+using FluentValidation;
+
 namespace BookLibrary.Middleware;
 
 public class GlobalExceptionHandlerMiddleware(
@@ -14,6 +16,27 @@ public class GlobalExceptionHandlerMiddleware(
         try
         {
             await next(context);
+        }
+        catch (ValidationException ex)
+        {
+            _logger.LogWarning(ex, "Validation failed for {Method} {Path}.",
+                context.Request.Method, context.Request.Path);
+
+            context.Response.StatusCode = 400;
+            context.Response.ContentType = "application/json";
+
+            var errors = ex.Errors
+                .GroupBy(e => e.PropertyName)
+                .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
+
+            var errorResponse = new
+            {
+                success = false,
+                message = "Validation failed.",
+                errors
+            };
+
+            await context.Response.WriteAsync(JsonSerializer.Serialize(errorResponse));
         }
         catch (Exception ex)
         {

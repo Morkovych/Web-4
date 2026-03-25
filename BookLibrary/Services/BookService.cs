@@ -1,9 +1,10 @@
 using BookLibrary.Contracts;
 using BookLibrary.Models;
+using FluentValidation;
 
 namespace BookLibrary.Services;
 
-public class BookService(IBookRepository repository) : IBookService
+public class BookService(IBookRepository repository, IValidator<Book> validator) : IBookService
 {
     public Task<List<Book>> GetAllAsync(string? author = null, string? sortBy = null)
     {
@@ -30,15 +31,17 @@ public class BookService(IBookRepository repository) : IBookService
         return Task.FromResult(book);
     }
 
-    public Task<Book> CreateAsync(Book book)
+    public async Task<Book> CreateAsync(Book book)
     {
+        await validator.ValidateAndThrowAsync(book);
         repository.Add(book);
-        return Task.FromResult(book);
+        return book;
     }
 
-    public Task<bool> UpdateAsync(Book book)
+    public async Task<bool> UpdateAsync(Book book)
     {
-        return Task.FromResult(repository.Update(book));
+        await validator.ValidateAndThrowAsync(book);
+        return repository.Update(book);
     }
 
     public Task<bool> DeleteAsync(int id)

@@ -122,7 +122,7 @@ public class BookController(
     {
         logger.LogInformation("Attempting to delete book with ID {BookId}", id);
 
-        bool success = await bookService.DeleteAsync(id);
+        var success = await bookService.DeleteAsync(id);
         if (!success)
         {
             logger.LogWarning("Delete failed: book with ID {BookId} not found.", id);

@@ -13,7 +13,7 @@ public class MemoryBookRepository : IBookRepository
     {
         _books =
         [
-            new()
+            new Book
             {
                 Id = GetNextId(),
                 Title = "Clean Code",
@@ -24,7 +24,7 @@ public class MemoryBookRepository : IBookRepository
                 IsAvailable = true
             },
 
-            new()
+            new Book
             {
                 Id = GetNextId(),
                 Title = "Clean Architecture",
@@ -35,7 +35,7 @@ public class MemoryBookRepository : IBookRepository
                 IsAvailable = true
             },
 
-            new()
+            new Book
             {
                 Id = GetNextId(),
                 Title = "Clean Agile",
@@ -60,7 +60,7 @@ public class MemoryBookRepository : IBookRepository
 
     public bool Update(Book book)
     {
-        int index = _books.FindIndex(b => b.Id == book.Id);
+        var index = _books.FindIndex(b => b.Id == book.Id);
         if (index == -1)
             return false;
 
@@ -70,7 +70,7 @@ public class MemoryBookRepository : IBookRepository
 
     public bool Delete(int id)
     {
-        int index = _books.FindIndex(b => b.Id == id);
+        var index = _books.FindIndex(b => b.Id == id);
         if (index == -1)
             return false;
 
