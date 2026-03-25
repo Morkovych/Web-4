@@ -1,5 +1,6 @@
 using BookLibrary.Contracts;
 using BookLibrary.Middleware;
+using BookLibrary.Repositories;
 using BookLibrary.Services;
 using BookLibrary.Validators;
 using FluentValidation;
@@ -18,6 +19,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
     options.SuppressModelStateInvalidFilter = false;
 });
 
+builder.Services.AddSingleton<IBookRepository, MemoryBookRepository>();
 builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddControllers()
     .AddControllersAsServices();

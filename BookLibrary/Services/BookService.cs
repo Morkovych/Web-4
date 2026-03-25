@@ -1,13 +1,13 @@
-﻿using BookLibrary.Contracts;
+using BookLibrary.Contracts;
 using BookLibrary.Models;
 
 namespace BookLibrary.Services;
 
-public class BookService : IBookService
+public class BookService(IBookRepository repository) : IBookService
 {
     public Task<List<Book>> GetAllAsync(string? author = null, string? sortBy = null)
     {
-        var books = BookStoreService.GetAll().ToList();
+        var books = repository.GetAll().ToList();
 
         if (!string.IsNullOrWhiteSpace(author))
         {
@@ -26,23 +26,23 @@ public class BookService : IBookService
 
     public Task<Book?> GetByIdAsync(int id)
     {
-        var book = BookStoreService.GetById(id);
+        var book = repository.GetById(id);
         return Task.FromResult(book);
     }
 
     public Task<Book> CreateAsync(Book book)
     {
-        BookStoreService.Add(book);
+        repository.Add(book);
         return Task.FromResult(book);
     }
 
     public Task<bool> UpdateAsync(Book book)
     {
-        return Task.FromResult(BookStoreService.Update(book));
+        return Task.FromResult(repository.Update(book));
     }
 
     public Task<bool> DeleteAsync(int id)
     {
-        return Task.FromResult(BookStoreService.Delete(id));
+        return Task.FromResult(repository.Delete(id));
     }
 }
