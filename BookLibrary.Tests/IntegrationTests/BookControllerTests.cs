@@ -69,7 +69,7 @@ public class BookControllerTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task GetBookById_WithInvalidId_ReturnsNotFound()
     {
-        var response = await _client.GetAsync("api/v1/books/999");
+        var response = await _client.GetAsync("api/v1/books/9999");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
