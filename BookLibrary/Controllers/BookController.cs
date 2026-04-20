@@ -13,18 +13,29 @@ public class BookController(
     ILogger<BookController> logger
 ) : ControllerBase
 {
-
     [HttpGet]
     public async Task<ActionResult<ApiResponse<List<BookResponse>>>> GetBooks(
         string? author = null,
-        string? sortBy = null)
+        string? sortBy = null,
+        bool withDetails = false)
     {
-        logger.LogInformation("Fetching books. Filters - Author: {Author}, SortBy: {SortBy}",
-            author ?? "not specified", sortBy ?? "not specified");
+        logger.LogInformation(
+            "Fetching books. Filters - Author: {Author}, SortBy: {SortBy}, WithDetails: {WithDetails}",
+            author ?? "not specified", sortBy ?? "not specified", withDetails ? "true" : "false");
 
-        var books = await bookService.GetAllAsync(author, sortBy);
+        var books = await bookService.GetAllAsync(author, sortBy, withDetails);
 
         logger.LogInformation("Successfully returned {BookCount} books.", books.Count);
+
+        if (withDetails)
+        {
+            return Ok(new ApiResponse<List<BookDetailResponse>>
+            {
+                Success = true,
+                Data = books.ToDetailResponseList(),
+                Message = "Books with details retrieved successfully."
+            });
+        }
 
         return Ok(new ApiResponse<List<BookResponse>>
         {
@@ -63,8 +74,8 @@ public class BookController(
     [HttpPost]
     public async Task<ActionResult<ApiResponse<BookResponse>>> CreateBook(BookRequest request)
     {
-        logger.LogInformation("Attempting to create a new book. Title: {Title}, Author: {Author}",
-            request.Title, request.Author);
+        logger.LogInformation("Attempting to create a new book. Title: {Title}, AuthorId: {AuthorId}",
+            request.Title, request.AuthorId);
 
         try
         {
@@ -141,6 +152,24 @@ public class BookController(
         {
             Success = true,
             Message = "Book delete successfully."
+        });
+    }
+
+    // todo добавить фильтры как в GetBooks
+    [HttpGet("with-details")]
+    public async Task<ActionResult<ApiResponse<List<BookDetailResponse>>>> GetBooksWithDetails()
+    {
+        logger.LogInformation("Fetching all books with details.");
+
+        var books = await bookService.GetAllWithDetailsAsync();
+
+        logger.LogInformation("Successfully returned {BookCount} books with details.", books.Count);
+
+        return Ok(new ApiResponse<List<BookDetailResponse>>
+        {
+            Success = true,
+            Data = books.ToDetailResponseList(),
+            Message = "Books with details retrieved successfully."
         });
     }
 }

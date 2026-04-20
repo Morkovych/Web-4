@@ -1,4 +1,5 @@
 using BookLibrary.Contracts;
+using BookLibrary.Dto.Responses;
 using BookLibrary.Models;
 using FluentValidation;
 
@@ -6,46 +7,57 @@ namespace BookLibrary.Services;
 
 public class BookService(IBookRepository repository, IValidator<Book> validator) : IBookService
 {
-    public Task<List<Book>> GetAllAsync(string? author = null, string? sortBy = null)
+    public async Task<List<Book>> GetAllAsync(string? author = null, string? sortBy = null, bool withDetails = false)
     {
-        var books = repository.GetAll().ToList();
-
-        if (!string.IsNullOrWhiteSpace(author))
-        {
-            books = books
-                .Where(b => b.Author.Contains(author, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-        }
-
-        if (string.Equals(sortBy, "title", StringComparison.OrdinalIgnoreCase))
-        {
-            books = books.OrderBy(b => b.Title).ToList();
-        }
-
-        return Task.FromResult(books);
+        return withDetails
+            ? await repository.GetAllWithDetailsAsync(author, sortBy)
+            : await repository.GetAllAsync(author, sortBy);
     }
 
-    public Task<Book?> GetByIdAsync(int id)
+    public async Task<Book?> GetByIdAsync(int id)
     {
-        var book = repository.GetById(id);
-        return Task.FromResult(book);
+        return await repository.GetByIdAsync(id);
     }
 
     public async Task<Book> CreateAsync(Book book)
     {
         await validator.ValidateAndThrowAsync(book);
-        repository.Add(book);
+        await repository.AddAsync(book);
         return book;
     }
 
     public async Task<bool> UpdateAsync(Book book)
     {
         await validator.ValidateAndThrowAsync(book);
-        return repository.Update(book);
+        return await repository.UpdateAsync(book);
     }
 
-    public Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(int id)
     {
-        return Task.FromResult(repository.Delete(id));
+        return await repository.DeleteAsync(id);
+    }
+
+    public async Task<List<Book>> GetAllWithDetailsAsync()
+    {
+        return await repository.GetAllWithDetailsAsync();
+    }
+
+    public async Task<List<Book>> GetBooksByAuthorIdAsync(int authorId)
+    {
+        return await repository.GetBooksByAuthorIdAsync(authorId);
+    }
+
+    public async Task<List<CategoryStatisticsResponse>> GetCategoryStatisticsAsync()
+    {
+        var books = await repository.GetAllWithDetailsAsync();
+
+        return books
+            .GroupBy(b => b.Category.Name)
+            .Select(g => new CategoryStatisticsResponse(
+                CategoryName: g.Key,
+                BookCount: g.Count(),
+                AveragePublicationYear: g.Average(b => b.PublicationYear)
+            ))
+            .ToList();
     }
 }
