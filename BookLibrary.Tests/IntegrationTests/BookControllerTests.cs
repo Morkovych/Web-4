@@ -271,4 +271,58 @@ public class BookControllerTests : IClassFixture<PostgresWebApplicationFactory>
         var response = await _client.DeleteAsync("api/v1/books/999");
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
+
+    [Fact]
+    public async Task GetBooksWithDetails_ReturnsAllBooksWithAuthorAndCategory()
+    {
+        var response = await _client.GetAsync("api/v1/books/with-details");
+
+        response.EnsureSuccessStatusCode();
+        string json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<ApiResponse<List<BookDetailResponse>>>(json, _options);
+
+        result.Should().NotBeNull();
+        result!.Success.Should().BeTrue();
+        result.Data.Should().NotBeNullOrEmpty();
+
+        var first = result.Data!.First(b => b.Title == "Clean Code");
+        first.Author.Should().NotBeNull();
+        first.Author.FirstName.Should().Be("Robert");
+        first.Author.LastName.Should().Be("Martin");
+        first.Category.Should().NotBeNull();
+        first.Category.Name.Should().Be("Technical literature");
+    }
+
+    [Fact]
+    public async Task GetBooksByAuthor_ReturnsBooksBelongingToAuthor()
+    {
+        var response = await _client.GetAsync("api/v1/authors/1/books");
+
+        response.EnsureSuccessStatusCode();
+        string json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<ApiResponse<List<BookDetailResponse>>>(json, _options);
+
+        result.Should().NotBeNull();
+        result!.Success.Should().BeTrue();
+        result.Data.Should().NotBeNullOrEmpty();
+        result.Data.Should().AllSatisfy(b => b.Author.FirstName.Should().Be("Robert"));
+    }
+
+    [Fact]
+    public async Task GetCategoryStatistics_ReturnsStatistics()
+    {
+        var response = await _client.GetAsync("api/v1/categories/statistics");
+
+        response.EnsureSuccessStatusCode();
+        string json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<ApiResponse<List<CategoryStatisticsResponse>>>(json, _options);
+
+        result.Should().NotBeNull();
+        result!.Success.Should().BeTrue();
+        result.Data.Should().NotBeNullOrEmpty();
+
+        var techCategory = result.Data!.First(c => c.CategoryName == "Technical literature");
+        techCategory.BookCount.Should().BeGreaterThan(0);
+        techCategory.AveragePublicationYear.Should().BeGreaterThan(0);
+    }
 }
