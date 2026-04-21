@@ -56,7 +56,7 @@ public class BookService(IBookRepository repository, IValidator<Book> validator)
             .Select(g => new CategoryStatisticsResponse(
                 CategoryName: g.Key,
                 BookCount: g.Count(),
-                AveragePublicationYear: g.Average(b => b.PublicationYear)
+                AveragePublicationYear: (int)Math.Round(g.Average(b => b.PublicationYear))
             ))
             .ToList();
     }
