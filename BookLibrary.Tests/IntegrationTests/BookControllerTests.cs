@@ -1,22 +1,21 @@
-﻿using System.Net;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using BookLibrary.Dto.Responses;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit.Abstractions;
 
 namespace BookLibrary.Tests.IntegrationTests;
 
-public class BookControllerTests : IClassFixture<WebApplicationFactory<Program>>
+public class BookControllerTests : IClassFixture<PostgresWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly PostgresWebApplicationFactory _factory;
     private readonly ITestOutputHelper _testOutputHelper;
     private readonly HttpClient _client;
     private readonly JsonSerializerOptions _options;
 
-    public BookControllerTests(WebApplicationFactory<Program> factory, ITestOutputHelper testOutputHelper)
+    public BookControllerTests(PostgresWebApplicationFactory factory, ITestOutputHelper testOutputHelper)
     {
         _factory = factory;
         _testOutputHelper = testOutputHelper;
@@ -28,9 +27,6 @@ public class BookControllerTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task GetBooks_ReturnsAllBooks()
     {
         var response = await _client.GetAsync("api/v1/books");
-
-        // _testOutputHelper.WriteLine($"Status: {response.StatusCode}");
-        // _testOutputHelper.WriteLine($"Body: {await response.Content.ReadAsStringAsync()}");
 
         response.EnsureSuccessStatusCode();
         string json = await response.Content.ReadAsStringAsync();
@@ -56,7 +52,8 @@ public class BookControllerTests : IClassFixture<WebApplicationFactory<Program>>
         var expected = new BookResponse(
             Id: 1,
             Title: "Clean Code",
-            Author: "Robert C. Martin",
+            AuthorId: 1,
+            CategoryId: 1,
             Isbn: "978-11-1111-000-1",
             PublicationYear: 2008,
             Genre: "Technical literature",
@@ -93,8 +90,6 @@ public class BookControllerTests : IClassFixture<WebApplicationFactory<Program>>
 
         result.Should().NotBeNull();
         result.Data.Should().NotBeNullOrEmpty();
-        result.Data.Should().AllSatisfy(b =>
-            b.Author.ToLowerInvariant().Should().Contain("martin"));
     }
 
     [Fact]
@@ -134,8 +129,6 @@ public class BookControllerTests : IClassFixture<WebApplicationFactory<Program>>
 
         result.Should().NotBeNull();
         result.Data.Should().NotBeNullOrEmpty();
-        result.Data.Should().AllSatisfy(b =>
-            b.Author.ToLowerInvariant().Should().Contain("robert"));
         result.Data.Should().BeInAscendingOrder(x => x.Title);
     }
 
@@ -145,7 +138,8 @@ public class BookControllerTests : IClassFixture<WebApplicationFactory<Program>>
         var newBook = new
         {
             title = "Test Book",
-            author = "Test Author",
+            authorId = 1,
+            categoryId = 1,
             isbn = "978-11-1111-111-1",
             publicationYear = 2026,
             genre = "Fiction",
@@ -162,7 +156,7 @@ public class BookControllerTests : IClassFixture<WebApplicationFactory<Program>>
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         string json = await response.Content.ReadAsStringAsync();
-        var result = JsonSerializer.Deserialize<ApiResponse<BookResponse>>(json);
+        var result = JsonSerializer.Deserialize<ApiResponse<BookResponse>>(json, _options);
 
         result.Should().NotBeNull();
         result.Success.Should().BeTrue();
@@ -174,7 +168,6 @@ public class BookControllerTests : IClassFixture<WebApplicationFactory<Program>>
     {
         var invalidBook = new
         {
-            author = "A",
             isbn = "123",
             publicationYear = 2026
         };
@@ -198,7 +191,6 @@ public class BookControllerTests : IClassFixture<WebApplicationFactory<Program>>
         problem.Should().NotBeNull();
         problem.Status.Should().Be(400);
         problem.Errors.Should().ContainKey("Title");
-        problem.Errors.Should().ContainKey("Author");
         problem.Errors.Should().ContainKey("Isbn");
     }
 
@@ -209,7 +201,8 @@ public class BookControllerTests : IClassFixture<WebApplicationFactory<Program>>
         {
             id = 1,
             title = "Updated Clean Code",
-            author = "Robert C. Martin",
+            authorId = 1,
+            categoryId = 1,
             isbn = "978-11-1111-000-1",
             publicationYear = 2025,
             genre = "Refactored Literature",
@@ -230,7 +223,7 @@ public class BookControllerTests : IClassFixture<WebApplicationFactory<Program>>
 
         result.Should().NotBeNull();
         result.Data.Should().NotBeNull();
-        result.Data.Title.Should().Be("Updated Clean Code");
+        result.Data!.Title.Should().Be("Updated Clean Code");
         result.Data.PublicationYear.Should().Be(2025);
         result.Data.IsAvailable.Should().BeFalse();
     }
@@ -242,7 +235,8 @@ public class BookControllerTests : IClassFixture<WebApplicationFactory<Program>>
         {
             id = 999,
             title = "Non-existent",
-            author = "Nobody",
+            authorId = 1,
+            categoryId = 1,
             publicationYear = 2023
         };
 
@@ -276,5 +270,59 @@ public class BookControllerTests : IClassFixture<WebApplicationFactory<Program>>
     {
         var response = await _client.DeleteAsync("api/v1/books/999");
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetBooksWithDetails_ReturnsAllBooksWithAuthorAndCategory()
+    {
+        var response = await _client.GetAsync("api/v1/books/with-details");
+
+        response.EnsureSuccessStatusCode();
+        string json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<ApiResponse<List<BookDetailResponse>>>(json, _options);
+
+        result.Should().NotBeNull();
+        result!.Success.Should().BeTrue();
+        result.Data.Should().NotBeNullOrEmpty();
+
+        var first = result.Data!.First(b => b.Title == "Clean Code");
+        first.Author.Should().NotBeNull();
+        first.Author.FirstName.Should().Be("Robert");
+        first.Author.LastName.Should().Be("Martin");
+        first.Category.Should().NotBeNull();
+        first.Category.Name.Should().Be("Technical literature");
+    }
+
+    [Fact]
+    public async Task GetBooksByAuthor_ReturnsBooksBelongingToAuthor()
+    {
+        var response = await _client.GetAsync("api/v1/authors/1/books");
+
+        response.EnsureSuccessStatusCode();
+        string json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<ApiResponse<List<BookDetailResponse>>>(json, _options);
+
+        result.Should().NotBeNull();
+        result!.Success.Should().BeTrue();
+        result.Data.Should().NotBeNullOrEmpty();
+        result.Data.Should().AllSatisfy(b => b.Author.FirstName.Should().Be("Robert"));
+    }
+
+    [Fact]
+    public async Task GetCategoryStatistics_ReturnsStatistics()
+    {
+        var response = await _client.GetAsync("api/v1/categories/statistics");
+
+        response.EnsureSuccessStatusCode();
+        string json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<ApiResponse<List<CategoryStatisticsResponse>>>(json, _options);
+
+        result.Should().NotBeNull();
+        result!.Success.Should().BeTrue();
+        result.Data.Should().NotBeNullOrEmpty();
+
+        var techCategory = result.Data!.First(c => c.CategoryName == "Technical literature");
+        techCategory.BookCount.Should().BeGreaterThan(0);
+        techCategory.AveragePublicationYear.Should().BeGreaterThan(0);
     }
 }

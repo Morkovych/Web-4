@@ -11,9 +11,11 @@ public class BookValidator : AbstractValidator<Book>
             .NotEmpty().WithMessage("Title is required.")
             .Length(1, 250).WithMessage("Title length must be between 1 and 250 characters.");
 
-        RuleFor(x => x.Author)
-            .NotEmpty().WithMessage("Author is required.")
-            .Length(2, 150).WithMessage("Author length must be between 2 and 150 characters.");
+        RuleFor(x => x.AuthorId)
+            .GreaterThan(0).WithMessage("AuthorId must be greater than 0.");
+
+        RuleFor(x => x.CategoryId)
+            .GreaterThan(0).WithMessage("CategoryId must be greater than 0.");
 
         RuleFor(x => x.Isbn)
             .Matches(@"^(978|979)-\d{2}-\d{4}-\d{3}-\d$")
